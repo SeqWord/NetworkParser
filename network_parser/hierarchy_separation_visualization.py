@@ -384,10 +384,10 @@ def _write_dendrogram_image(
         ax=ax,
         color_threshold=None,
     )
-    ax.set_title(title)
     ax.set_xlabel(distance_label)
     ax.set_ylabel("Samples / strains")
     fig.tight_layout()
+    fig.text(0.5, -0.02, title, ha="center", va="top", fontsize=11)
     fig.savefig(output_png, dpi=200, bbox_inches="tight")
     fig.savefig(output_svg, bbox_inches="tight")
     plt.close(fig)

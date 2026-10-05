@@ -193,17 +193,25 @@ def draw_registry_tree(
     ax.set_xlim(x_min - 1.2, x_max + 1.2)
     ax.set_ylim(y_min - 1.0, y_max + 1.5)
     path = " → ".join(str(x) for x in labels) if labels else "hierarchy"
-    fig.suptitle(
-        title or f"Figure {figure_number}. Hierarchical model tree — {path}",
+    caption = title or f"Figure {figure_number}. Hierarchical model tree — {path}"
+    fig.text(
+        0.5,
+        -0.02,
+        caption,
+        ha="center",
+        va="top",
         fontsize=13,
         fontweight="bold",
-        y=0.98,
     )
     fig.text(
         0.5,
-        0.02,
-        "Edge labels = parent-class routes; boxes = task, algorithm, status, training n. From trained registry only.",
+        -0.06,
+        (
+            "Edge labels = parent-class routes; boxes = task, algorithm, "
+            "status, training n. From trained registry only."
+        ),
         ha="center",
+        va="top",
         fontsize=8.5,
         color="#546E7A",
     )

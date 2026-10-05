@@ -112,7 +112,7 @@ This example matches variant-only VCF cohorts (GQ often missing; absent sites tr
 
 The defaults stop the run if FDR keeps no features or no panel reaches the score threshold. Fallbacks such as `top_n`, `unfiltered`, and `best_available` have to be turned on on purpose.
 
-**Known-marker seed** (WHO-style catalogue forced into AMR/profile panels) is off until you enable it. See [`docs/KNOWN_MARKER_SEED.md`](docs/KNOWN_MARKER_SEED.md).
+**Known-marker seed** (WHO-style catalogue forced into AMR/profile panels) is off in `data/config.json` until you enable it. See [`docs/KNOWN_MARKER_SEED.md`](docs/KNOWN_MARKER_SEED.md). The model deposited in `model/` was trained with that priority on. `data/config.json` is the small-demo default (`central_feature_filter_method` `rf_fdr`). It does not reproduce the deposited model.
 
 All fields: [`network_parser/config.py`](network_parser/config.py).
 
@@ -125,7 +125,9 @@ The repository ships a trained AFRO hierarchy model in [`model/`](model/):
 | `model/networkparser_model_bundle.npb` | `--bundle` for query |
 | `model/hierarchical_model_registry.json` | `--registry` for query, annotate, or `bundle` |
 
-Hierarchy: `Lineage_clean` → `AMR_binary` → `Resistance_Profile_Collapsed`. You can run `query` on new samples without retraining. `train-hierarchy` with `--output_dir model` replaces these files.
+Hierarchy: `Lineage_clean` → `AMR_binary` → `Resistance_Profile_Collapsed`. This bundle is the manuscript model: chi-square/Fisher false-discovery-rate filtering, known-mutation priority on, 10,974 AFRO-TB training genomes (`Hierarchy_Lineage_AMR_Resistance_Profile_seeded_01`). Logistic regression was selected for ten fitted nodes and random forest for three. The training configuration is [`model/afro_tb_seeded_training_config.json`](model/afro_tb_seeded_training_config.json).
+
+Query with `--bundle model/networkparser_model_bundle.npb`. The registry records the training layout; the matrices and catalogues it names are not in this repository. `train-hierarchy` with `--output_dir model` replaces these files.
 
 `.npb` files contain Python pickle objects. Load them only from this repository or another trusted training run.
 

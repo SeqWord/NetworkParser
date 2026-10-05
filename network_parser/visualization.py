@@ -164,12 +164,24 @@ def _safe_token(value: Any, max_len: int = 80) -> str:
     return cleaned[:max_len].rstrip("_")
 
 
+def _set_bottom_title(fig: plt.Figure, title: str | None) -> None:
+    """Place the figure title below the axes (publication-style caption)."""
+    if not title:
+        return
+    fig.text(0.5, -0.02, title, ha="center", va="top", fontsize=11)
+
+
 def _save_figure(
-    fig: plt.Figure, path: str | Path, *, svg: bool = True
+    fig: plt.Figure,
+    path: str | Path,
+    *,
+    svg: bool = True,
+    title: str | None = None,
 ) -> Dict[str, str]:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
+    _set_bottom_title(fig, title)
     fig.savefig(path, dpi=250, bbox_inches="tight")
     outputs = {"png": str(path)}
     if svg:
@@ -515,10 +527,9 @@ def plot_sample_dendrogram(
         leaf_font_size=7 if X_plot.shape[0] <= 80 else 5,
         ax=ax,
     )
-    ax.set_title(title)
     ax.set_xlabel(f"Average-linkage distance ({metric})")
     ax.set_ylabel("Samples")
-    outputs = _save_figure(fig, out_png)
+    outputs = _save_figure(fig, out_png, title=title)
     return {
         "status": "generated",
         "artifacts": outputs,
@@ -550,7 +561,6 @@ def plot_matrix_heatmap(
     fig_height = max(4.0, min(24.0, 0.25 * X_plot.shape[0] + 2.0))
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
     im = ax.imshow(X_plot.to_numpy(dtype=float), aspect="auto", interpolation="nearest")
-    ax.set_title(title)
     ax.set_ylabel("Samples")
     ax.set_xlabel("Selected genomic features")
     ax.set_yticks(range(X_plot.shape[0]))
@@ -563,7 +573,7 @@ def plot_matrix_heatmap(
     else:
         ax.set_xticks([])
     fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02, label="Encoded marker state")
-    outputs = _save_figure(fig, out_png)
+    outputs = _save_figure(fig, out_png, title=title)
     return {
         "status": "generated",
         "artifacts": outputs,
@@ -588,10 +598,11 @@ def plot_marker_counts(summary_df: pd.DataFrame, out_png: str | Path) -> Dict[st
     fig_height = max(4.0, min(24.0, 0.35 * len(df) + 1.5))
     fig, ax = plt.subplots(figsize=(9.5, fig_height))
     ax.barh(df["model_id"].astype(str), df["n_selected_features"].astype(float))
-    ax.set_title("Final selected marker counts by trained level/node")
     ax.set_xlabel("Selected genomic features")
     ax.set_ylabel("Trained level/node")
-    outputs = _save_figure(fig, out_png)
+    outputs = _save_figure(
+        fig, out_png, title="Final selected marker counts by trained level/node"
+    )
     return {"status": "generated", "artifacts": outputs, "levels": int(len(df))}
 
 
@@ -616,13 +627,14 @@ def plot_jaccard_heatmap(
     fig_size = max(5.5, min(16.0, 0.5 * len(valid) + 3.5))
     fig, ax = plt.subplots(figsize=(fig_size, fig_size))
     im = ax.imshow(matrix, vmin=0.0, vmax=1.0, interpolation="nearest")
-    ax.set_title("Selected-marker overlap between trained levels/nodes")
     ax.set_xticks(range(len(names)))
     ax.set_yticks(range(len(names)))
     ax.set_xticklabels(names, rotation=90, fontsize=7 if len(names) <= 30 else 5)
     ax.set_yticklabels(names, fontsize=7 if len(names) <= 30 else 5)
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="Jaccard overlap")
-    outputs = _save_figure(fig, out_png)
+    outputs = _save_figure(
+        fig, out_png, title="Selected-marker overlap between trained levels/nodes"
+    )
     return {"status": "generated", "artifacts": outputs, "levels": int(len(valid))}
 
 
@@ -640,10 +652,9 @@ def plot_route_counts(
     fig_height = max(4.0, min(24.0, 0.40 * len(counts) + 1.5))
     fig, ax = plt.subplots(figsize=(10.5, fig_height))
     ax.barh(counts["route"].astype(str), counts["n_samples"].astype(float))
-    ax.set_title("Query prediction route counts")
     ax.set_xlabel("Query samples")
     ax.set_ylabel("Predicted route")
-    outputs = _save_figure(fig, out_png)
+    outputs = _save_figure(fig, out_png, title="Query prediction route counts")
     return counts, {
         "status": "generated",
         "artifacts": outputs,
@@ -678,11 +689,10 @@ def plot_numeric_summary(
     fig_width = max(8.0, min(20.0, 0.4 * plot_df.shape[0] + 4.0))
     fig, ax = plt.subplots(figsize=(fig_width, 5.0))
     plot_df.plot(kind="bar", ax=ax)
-    ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel("Query sample")
     ax.tick_params(axis="x", labelrotation=90)
-    outputs = _save_figure(fig, out_png)
+    outputs = _save_figure(fig, out_png, title=title)
     return {
         "status": "generated",
         "artifacts": outputs,
@@ -748,9 +758,10 @@ def write_marker_level_graph(
         nx.draw_networkx_nodes(G, pos, nodelist=level_nodes, node_size=260, ax=ax)
         labels = {n: G.nodes[n].get("model_id", n) for n in level_nodes}
         nx.draw_networkx_labels(G, pos, labels=labels, font_size=7, ax=ax)
-    ax.set_title("Selected-marker level graph")
     ax.axis("off")
-    outputs = _save_figure(fig, out_prefix.with_suffix(".png"))
+    outputs = _save_figure(
+        fig, out_prefix.with_suffix(".png"), title="Selected-marker level graph"
+    )
     return {
         "status": "generated",
         "graphml": str(graphml),
@@ -813,9 +824,10 @@ def write_query_route_graph(
     if len(sample_nodes) <= 40:
         labels.update({n: str(G.nodes[n].get("label", n)) for n in sample_nodes})
     nx.draw_networkx_labels(G, pos, labels=labels, font_size=7, ax=ax)
-    ax.set_title("Query route graph")
     ax.axis("off")
-    outputs = _save_figure(fig, out_prefix.with_suffix(".png"))
+    outputs = _save_figure(
+        fig, out_prefix.with_suffix(".png"), title="Query route graph"
+    )
     return {
         "status": "generated",
         "graphml": str(graphml),
@@ -1077,10 +1089,11 @@ def _plot_call_status_counts(
     fig_height = max(4.0, min(18.0, 0.35 * len(counts) + 1.5))
     fig, ax = plt.subplots(figsize=(9.5, fig_height))
     ax.barh(counts.index.astype(str), counts.values.astype(float))
-    ax.set_title(f"Query feature-call summary by {col}")
     ax.set_xlabel("Feature calls")
     ax.set_ylabel(col)
-    outputs = _save_figure(fig, out_png)
+    outputs = _save_figure(
+        fig, out_png, title=f"Query feature-call summary by {col}"
+    )
     counts_path = out_png.with_suffix(".tsv")
     counts.rename("n_feature_calls").reset_index().rename(
         columns={"index": col}
